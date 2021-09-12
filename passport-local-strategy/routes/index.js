@@ -1,12 +1,35 @@
 const router = require("express").Router();
 const passport = require("passport");
-const passwordUtils = require("../lib/passwordUtils");
+const genPassword = require("../lib/passwordUtils").genPassword;
 const connection = require("../config/database");
 const User = connection.models.User;
+const { isAuth, isAdmin } = require("../middlewares/auth");
 
-router.post("/login", (req, res, next) => {});
+router.post(
+  "/login",
+  passport.authenticate("local", {
+    failureRedirect: "/login-failure",
+    successRedirect: "/login-success",
+  })
+);
 
-router.post("/register", (req, res, next) => {});
+router.post("/register", (req, res, next) => {
+  const saltHash = genPassword(req.body.password);
+
+  const salt = saltHash.salt;
+  const hash = saltHash.hash;
+
+  const newUser = new User({
+    username: req.body.username,
+    hash,
+    salt,
+    admin: true,
+  });
+
+  newUser.save().then((user) => console.log(user));
+
+  res.redirect("/login");
+});
 
 router.get("/", (req, res, next) => {
   res.send('<h1>Home</h1><p>Please <a href="/register">register</a></p>');
@@ -32,21 +55,21 @@ router.get("/register", (req, res, next) => {
   res.send(form);
 });
 
-router.get("/protected-route", (req, res, next) => {
-  if (req.isAuthenticated()) {
-    res.send(
-      '<h1>You are authenticated</h1><p><a href="/logout">Logout and reload</a></p>'
-    );
-  } else {
-    res.send(
-      '<h1>You are not authenticated</h1><p><a href="/login">Login</a></p>'
-    );
-  }
+router.get("/protected-route", isAuth, (req, res, next) => {
+  res.send(
+    '<p>You made it here!!!!<a href="/logout">logout</a><br/><a href="/highly-protected-route">highly protected route</a></p>'
+  );
+});
+
+router.get("/highly-protected-route", isAuth, isAdmin, (req, res, next) => {
+  res.send(
+    '<p>You made it here TOPPPP SECRETTTTTTTTTTT!!!!</p><a href="/logout">logout</a></p>'
+  );
 });
 
 router.get("/logout", (req, res, next) => {
   req.logout();
-  res.redirect("/protected-route");
+  res.redirect("/login");
 });
 
 router.get("/login-success", (req, res, next) => {

@@ -1,9 +1,11 @@
 {
   "name": "passport-local-strategy",
-  "type": "module",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
+  "scripts": {
+    "start": "nodemon index.js"
+  },
   "dependencies": {
     "connect-mongo": "^4.5.0",
     "dotenv": "^10.0.0",
